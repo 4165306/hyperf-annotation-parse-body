@@ -4,20 +4,28 @@ namespace Caterpillar\HyperfAnnotationParseBody;
 
 
 use App\Aop\Annotation\ParseBody;
+use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Annotation\Inject;
+use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\Di\Exception\Exception;
 use Hyperf\HttpServer\Contract\RequestInterface;
 
-class HandleRequestToEntity
+#[Aspect]
+class HandleRequestToEntity extends AbstractAspect
 {
     // 要切入的注解
     public $annotations = [
         ParseBody::class,
     ];
 
-    #[Inject]
     protected RequestInterface $request;
+
+    public function __construct(RequestInterface $request)
+    {
+        echo "助手参数注入" . PHP_EOL;
+        $this->request = $request;
+    }
 
     private array $mapData = [];
 
@@ -26,6 +34,7 @@ class HandleRequestToEntity
      */
     public function process(ProceedingJoinPoint $proceedingJoinPoint)
     {
+        echo "切面方法执行" . PHP_EOL;
         $controllerMethod = $proceedingJoinPoint->getReflectMethod();
         $args = $controllerMethod->getParameters();
         $this->mapData = $this->request->all();

@@ -15,6 +15,7 @@ class ConfigProvider
 {
     public function __invoke(): array
     {
+        echo '加载ConfigProvider' . PHP_EOL;
         return [
             'dependencies' => [
             ],
@@ -27,6 +28,9 @@ class ConfigProvider
                     ],
                 ],
             ],
+            'aspects' => [
+                HandleRequestToEntity::class
+            ]
         ];
     }
 }
