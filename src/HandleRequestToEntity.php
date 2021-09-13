@@ -4,10 +4,13 @@ namespace Caterpillar\HyperfAnnotationParseBody;
 
 use Caterpillar\HyperfAnnotationParseBody\Annotation\ParseBody;
 use Hyperf\Di\Annotation\Aspect;
+use Hyperf\Di\Annotation\Inject;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\Di\Exception\Exception;
 use Hyperf\HttpServer\Contract\RequestInterface;
+use Hyperf\Utils\ApplicationContext;
+use Hyperf\Utils\Context;
 
 /**
  * @author Caterpillar
@@ -23,12 +26,8 @@ class HandleRequestToEntity extends AbstractAspect
         ParseBody::class
     ];
 
+    #[Inject]
     protected RequestInterface $request;
-
-    public function __construct(RequestInterface $request)
-    {
-        $this->request = $request;
-    }
 
     private array $mapData = [];
 
