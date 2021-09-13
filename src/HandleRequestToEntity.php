@@ -1,31 +1,34 @@
 <?php
 
+declare(strict_types=1);
+/**
+ * @author caterpillar
+ */
 namespace Caterpillar\HyperfAnnotationParseBody;
 
 use Caterpillar\HyperfAnnotationParseBody\Annotation\ParseBody;
+use Caterpillar\HyperfAnnotationParseBody\Exceptions\VariableTypeNotObtained;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Di\Aop\AbstractAspect;
 use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\Di\Exception\Exception;
 use Hyperf\HttpServer\Contract\RequestInterface;
-use Hyperf\Utils\ApplicationContext;
-use Hyperf\Utils\Context;
 
 /**
- * @author Caterpillar
- * Class HandleRequestToEntity
- * @package Caterpillar\HyperfAnnotationParseBody
- * @Aspect()
+ * @Aspect
  */
 #[Aspect]
 class HandleRequestToEntity extends AbstractAspect
 {
     // 要切入的注解
     public $annotations = [
-        ParseBody::class
+        ParseBody::class,
     ];
 
+    /**
+     * @Inject
+     */
     #[Inject]
     protected RequestInterface $request;
 
@@ -42,17 +45,21 @@ class HandleRequestToEntity extends AbstractAspect
         // 循环判断即将执行的方法参数
         foreach ($args as $arg) {
             try {
-                $class = new \ReflectionClass($arg->getType()->getName());
+                $variableTypeName = $this->getVariableTypeName($arg->getType());
+                if ($variableTypeName === null) {
+                    throw new VariableTypeNotObtained('unknown variable type');
+                }
+                $class = new \ReflectionClass($variableTypeName);
                 // 遇到接口类直接跳过
                 if ($class->isInterface()) {
                     continue;
                 }
                 // 尝试获取类反射实例
                 $newClass = $class->newInstance();
-            } catch (\ReflectionException) {
+            } catch (\ReflectionException|VariableTypeNotObtained $e) {
                 // 如果反射失败 比如是基础数据类型 int string bool 等数据类型，则从请求参数里边获取对应的数据，如果没有则设置为Null
                 $value = $this->mapData[$arg->getName()] ?? null;
-                $type = $arg->getType()?->getName();
+                $type = $this->getVariableTypeName($arg->getType());
                 // 兼容方法强类型
                 if ($type && $value) {
                     settype($value, $type == 'int' ? 'integer' : $type);
@@ -93,10 +100,18 @@ class HandleRequestToEntity extends AbstractAspect
                     if (count($args) === 1 && isset($this->mapData[$filter])) {
                         $method->invoke($newClass, $this->mapData[$filter]);
                     }
-                } catch (\ReflectionException) {
+                } catch (\ReflectionException $e) {
                     continue;
                 }
             }
         }
+    }
+
+    private function getVariableTypeName(?\ReflectionNamedType $reflectionNamedType)
+    {
+        if ($reflectionNamedType === null) {
+            return null;
+        }
+        return $reflectionNamedType->getName();
     }
 }

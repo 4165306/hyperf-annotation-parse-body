@@ -8,7 +8,7 @@ use Hyperf\Di\Annotation\AbstractAnnotation;
  * @author Caterpillar
  * Class ParseBody
  * @package Caterpillar\HyperfAnnotationParseBody\Annotation
- * @Target('ALL')
+ * @Target("ALL")
  * @Annotation
  */
 #[\Attribute(\Attribute::TARGET_ALL)]
