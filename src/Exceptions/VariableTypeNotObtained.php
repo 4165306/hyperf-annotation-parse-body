@@ -2,9 +2,14 @@
 
 namespace Caterpillar\HyperfAnnotationParseBody\Exceptions;
 
-use Hyperf\Server\Exception\ServerException;
+//use Hyperf\Server\Exception\ServerException;
 
-class VariableTypeNotObtained extends ServerException
+/**
+ * @author Caterpillar
+ * Class VariableTypeNotObtained
+ * @package Caterpillar\HyperfAnnotationParseBody\Exceptions
+ */
+class VariableTypeNotObtained extends \Exception
 {
 
 }
