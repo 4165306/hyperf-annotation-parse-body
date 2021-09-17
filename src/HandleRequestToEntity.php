@@ -68,7 +68,7 @@ class HandleRequestToEntity extends AbstractAspect
                 if ($type && $value) {
                     settype($value, $type == 'int' ? 'integer' : $type);
                 }
-                $params[$arg->getName()] = $value;
+                $proceedingJoinPoint->arguments['keys'][$arg->getName()] = $value;
                 continue;
             }
             // 实体类
@@ -77,7 +77,6 @@ class HandleRequestToEntity extends AbstractAspect
             }catch (VariableTypeNotObtained $e) {
                 continue;
             }
-            var_dump('newClass', $newClass);
             $proceedingJoinPoint->arguments['keys'][$arg->getName()] = $newClass;
         }
         return $proceedingJoinPoint->process();
@@ -118,7 +117,6 @@ class HandleRequestToEntity extends AbstractAspect
             }catch (\InvalidArgumentException $e) {
                 // 该类为基础数据类型/接口/trais等, 调用setter方法设置数据
                 // 属性转驼峰
-                var_dump('dataSource', $dataSource, $className);
                 $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
             }
         }
