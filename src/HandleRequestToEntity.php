@@ -20,6 +20,7 @@ use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\Di\Exception\Exception;
 use Hyperf\Di\ReflectionManager;
 use Hyperf\HttpServer\Contract\RequestInterface;
+use JetBrains\PhpStorm\Pure;
 
 /**
  * @Aspect
@@ -74,7 +75,7 @@ class HandleRequestToEntity extends AbstractAspect
             // 实体类
             try {
                 $newClass = $this->setEntityClass($variableTypeName, $mapData);
-            }catch (VariableTypeNotObtained $e) {
+            } catch (VariableTypeNotObtained|\ReflectionException $e) {
                 continue;
             }
             $proceedingJoinPoint->arguments['keys'][$arg->getName()] = $newClass;
@@ -82,11 +83,15 @@ class HandleRequestToEntity extends AbstractAspect
         return $proceedingJoinPoint->process();
     }
 
-    private function setEntityClass(string $className, array $dataSource)
+    /**
+     * @throws \ReflectionException
+     * @throws VariableTypeNotObtained
+     */
+    private function setEntityClass(string $className, array $dataSource): object
     {
         try {
             $classRef = ReflectionManager::reflectClass($className);
-        }catch (\InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $e) {
             throw new VariableTypeNotObtained('类不存在');
         }
         // 类私有属性
@@ -96,117 +101,29 @@ class HandleRequestToEntity extends AbstractAspect
         foreach ($classProperties as $classProperty) {
             $classPropertyTypeName = $this->getVariableTypeName($classProperty->getType());
             // 如果非强类型 则跳过处理
-            if ($classPropertyTypeName === null ) {
+            if ($classPropertyTypeName === null) {
                 continue;
             }
-            $classPropertyMehtodName = $this->filterMethodName($classProperty->getName());
+            $classPropertyMethodName = $this->filterMethodName($classProperty->getName());
             try {
-                $method = $classRef->getMethod('set' . $classPropertyMehtodName);
-            }catch (\ReflectionException $e) {
+                $method = $classRef->getMethod('set' . $classPropertyMethodName);
+            } catch (\ReflectionException $e) {
                 // 不存在setXxx方法 跳过
                 continue;
             }
             // 尝试反射实体类
             try {
-                $subClassRef = ReflectionManager::reflectClass($classPropertyTypeName);
+                ReflectionManager::reflectClass($classPropertyTypeName);
                 // 反射成功 为实体类 如果dataSource里边有对应属性，继续调用本方法实现子实体类的数据设置
                 if (isset($dataSource[$classProperty->getName()])) {
                     $subObj = $this->setEntityClass($classPropertyTypeName, $dataSource[$classProperty->getName()]);
                     $method->invoke($classInstance, $subObj);
                 }
-            }catch (\InvalidArgumentException $e) {
-                // 该类为基础数据类型/接口/trais等, 调用setter方法设置数据
+            } catch (\InvalidArgumentException $e) {
+                // 该类为基础数据类型/接口/trait , 调用setter方法设置数据
                 // 属性转驼峰
                 $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
             }
-        }
-        return $classInstance;
-    }
-
-    /**
-     * @param \ReflectionProperty[] $subClassProperties
-     * @param \object $subClassInstance
-     * @param array $mapData
-     * @param ReflectionMethod[] $methodsData
-     */
-    private function setSubClass(array $subClassProperties, object $subClassInstance, array $mapData, array $methodsData)
-    {
-        echo PHP_EOL . PHP_EOL;
-        echo "当前查询类:" . get_class($subClassInstance) . PHP_EOL;
-        $subClassInstanceRef = ReflectionManager::reflectClass(get_class($subClassInstance));
-        foreach ($subClassProperties as $key => $classProperty) {
-            $typeName = $this->getVariableTypeName($classProperty->getType());
-            echo "当前类{$key}属性:" . $typeName . PHP_EOL;
-            try {
-                $class = ReflectionManager::reflectClass($typeName);
-            } catch (\InvalidArgumentException $e) {
-                // 类属性不是一个实体类 调用setter 进行参数注入
-                foreach ($methodsData as $datum) {
-                    if (preg_match('/^set(\\w+)/', $datum->getName(), $matches)) {
-                      $subClassInstance = $this->invokeSetterMethod($matches[1], $subClassInstanceRef, $subClassInstance, $mapData);
-                    }
-                }
-                continue;
-            }
-            echo "获取" . $class->getName() . "类所有方法" . PHP_EOL;
-            $methods = $class->getMethods();
-            foreach ($methods as $method) {
-                // 匹配类的setter方法
-                if (preg_match('/^set(\\w+)/', $method->getName(), $matches)) {
-                    // 转换变量名
-                    $filter = strtolower($this->filterMethodName($matches[1]));
-                    // 获取所有私有类属性
-                    $properties = $class->getProperties(\ReflectionProperty::IS_PRIVATE);
-                    foreach ($properties as $property) {
-                        if (strtolower($property->getName()) === $filter) {
-                            $className = $this->getVariableTypeName($property->getType());
-                            try {
-                                $method = $class->getMethod('set' . $matches[1]);
-                            } catch (\ReflectionException $e) {
-                                continue;
-                            }
-                            $methodArgs = $method->getParameters();
-                            // setter方法有且仅有一个参数 并且请求参数有该数据 则执行setter
-                            if (count($methodArgs) === 1 && isset($mapData[$filter])) {
-                                if ($className === null) {
-                                    // 私有属性不是一个类
-                                    try {
-                                        $method->invoke($subClassInstance, $mapData[$filter]);
-                                    } catch (\ReflectionException $e) {
-                                        continue;
-                                    }
-                                    var_dump('methodsInvoke', $subClassInstance);
-                                } else {
-                                    // 私有属性是一个类 invoke 类结果
-                                    try {
-                                        $subClass = ReflectionManager::reflectClass($className);
-                                    } catch (\InvalidArgumentException|\ReflectionException $e) {
-                                        continue;
-                                    }
-                                    $subClassProperties = $subClass->getProperties(\ReflectionProperty::IS_PRIVATE);
-                                    try {
-                                        $subClassInstance = $subClass->newInstance();
-                                        $this->setSubClass($subClassProperties, $subClassInstance, $mapData[$property->getName()]);
-                                        $method->invoke($subClassInstance, $subClassInstance);
-                                    } catch (\ReflectionException $e) {
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private function invokeSetterMethod(string $methodName, \ReflectionClass $newClass, object $classInstance, array $mapData)
-    {
-        $filter = strtolower($this->filterMethodName($methodName));
-        $method = $newClass->getMethod('set' . $filter);
-        $method = $class->getMethod('set' . $name);
-        $args = $method->getParameters();
-        if (count($args) === 1 && isset($mapData[$filter])) {
-            $method->invoke($newClass, $mapData[$methodName]);
         }
         return $classInstance;
     }
@@ -217,37 +134,7 @@ class HandleRequestToEntity extends AbstractAspect
         return preg_replace('/(?<=[a-z])([A-Z])/', '_$1', $methodName);
     }
 
-    // 调用实体类setter方法进行对属性的数据设置
-    private function invokeSetterMethods(string $name, \ReflectionClass $class, object &$newClass, array $mapData)
-    {
-        $filter = strtolower($this->filterMethodName($name));
-        $properties = $class->getProperties(\ReflectionProperty::IS_PRIVATE);
-        foreach ($properties as $property) {
-            if (strtolower($property->getName()) === $filter) {
-                // todo 尝试二次反射判断数据类型
-                try {
-                    $className = $this->getVariableTypeName($property->getType());
-                    if ($className != null) {
-                        $propertyClass = new \ReflectionClass($className);
-                        if (! $propertyClass->isInterface()) {
-                            $instance = $propertyClass->newInstance();
-                        }
-                    }
-                } catch (\ReflectionException $e) {
-                }
-                try {
-                    $method = $class->getMethod('set' . $name);
-                    $args = $method->getParameters();
-                    if (count($args) === 1 && isset($mapData[$filter])) {
-                        $method->invoke($newClass, $mapData[$filter]);
-                    }
-                } catch (\ReflectionException $e) {
-                    continue;
-                }
-            }
-        }
-    }
-
+    #[Pure]
     private function getVariableTypeName(?\ReflectionNamedType $reflectionNamedType): ?string
     {
         if ($reflectionNamedType === null) {
