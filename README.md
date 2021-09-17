@@ -81,4 +81,47 @@
     ```
 
     在此示例方法中， 我们可以用命令行进行请求 `curl "http://127.0.0.1:9501/testAnnotationByFunction?name=1&age=2&birth_day=3"` 它会自动的帮我们注入相同参数名字的变量
-
+    - **使用方式3**
+    ```php
+    <?php
+    
+    declare(strict_types=1);
+  	
+    namespace xxx;
+    use Caterpillar\HyperfAnnotationParseBody\Annotation\ParseBody;
+    use Hyperf\HttpServer\Annotation\GetMapping;
+    
+    // 类注解则本类均可生效
+    #[ParseBody]
+    class TestController {
+    	
+        #[GetMapping(path: '/testAnnotationByFunction')]
+        #[ParseBody]
+        public function testAnnotationFunction(UserEntity $user, ?int $id)
+        {
+             return [
+              'user' => $user->getProperty()->getCar(),
+              'age' => $age,
+              'birth_day' => $birth_day
+            ]
+        }
+    }
+    
+    class UserEntity {
+      private int $id;
+      private Property $property;
+    
+      // getter/setter
+    }
+    
+    class Property {
+      private bool $has_car;
+      private bool $has_house;
+      // getter/setter
+    }
+    
+    ```
+    在此示例方法中， 我们可以在请求体中使用json进行请求，请注意请求头设置`Content-Type` 为 `application/json` 他就会自动帮我们同时注入`Property`类
+      ```json
+      {"id": 9, "property": { "has_car": false, "has_house": false}}
+      ```
