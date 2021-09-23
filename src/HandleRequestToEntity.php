@@ -94,35 +94,37 @@ class HandleRequestToEntity extends AbstractAspect
         } catch (\InvalidArgumentException $e) {
             throw new VariableTypeNotObtained('类不存在');
         }
-        // 类私有属性
-        $classProperties = $classRef->getProperties(\ReflectionProperty::IS_PRIVATE);
+        $methods = $classRef->getMethods(\ReflectionMethod::IS_PUBLIC);
         // 类实例
         $classInstance = $classRef->newInstance();
-        foreach ($classProperties as $classProperty) {
-            $classPropertyTypeName = $this->getVariableTypeName($classProperty->getType());
-            // 如果非强类型 则跳过处理
-            if ($classPropertyTypeName === null) {
-                continue;
-            }
-            $classPropertyMethodName = $this->filterMethodName($classProperty->getName());
-            try {
-                $method = $classRef->getMethod('set' . $classPropertyMethodName);
-            } catch (\ReflectionException $e) {
-                // 不存在setXxx方法 跳过
-                continue;
-            }
-            // 尝试反射实体类
-            try {
-                ReflectionManager::reflectClass($classPropertyTypeName);
-                // 反射成功 为实体类 如果dataSource里边有对应属性，继续调用本方法实现子实体类的数据设置
-                if (isset($dataSource[$classProperty->getName()])) {
-                    $subObj = $this->setEntityClass($classPropertyTypeName, $dataSource[$classProperty->getName()]);
-                    $method->invoke($classInstance, $subObj);
+        foreach ($methods as $method) {
+            if (preg_match('/^set(\\w+)/', $method->getName(), $matches)) {
+                $filterName = strtolower($this->filterMethodName($matches[1]));
+                // invoke methods
+                $classProperties = $classRef->getProperties(\ReflectionProperty::IS_PRIVATE);
+                foreach ($classProperties as $classProperty) {
+                    $classPropertyTypeName = $this->getVariableTypeName($classProperty->getType());
+                    // 如果非强类型 则跳过处理
+                    if ($classPropertyTypeName === null) {
+                        continue;
+                    }
+                    if ($filterName === strtolower($classProperty->getName()) && count($method->getParameters()) === 1) {
+                        // 存在对应的私有属性
+                        // 尝试反射实体类
+                        try {
+                            ReflectionManager::reflectClass($classPropertyTypeName);
+                            // 反射成功 为实体类 如果dataSource里边有对应属性，继续调用本方法实现子实体类的数据设置
+                            if (isset($dataSource[$classProperty->getName()])) {
+                                $subObj = $this->setEntityClass($classPropertyTypeName, $dataSource[$classProperty->getName()]);
+                                $method->invoke($classInstance, $subObj);
+                            }
+                        } catch (\InvalidArgumentException $e) {
+                            // 该类为基础数据类型/接口/trait , 调用setter方法设置数据
+                            // 属性转驼峰
+                            $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
+                        }
+                    }
                 }
-            } catch (\InvalidArgumentException $e) {
-                // 该类为基础数据类型/接口/trait , 调用setter方法设置数据
-                // 属性转驼峰
-                $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
             }
         }
         return $classInstance;
