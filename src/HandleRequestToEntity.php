@@ -39,8 +39,6 @@ class HandleRequestToEntity extends AbstractAspect
     #[Inject]
     protected RequestInterface $request;
 
-    private array $mapData = [];
-
     /**
      * @throws Exception
      */
@@ -70,6 +68,9 @@ class HandleRequestToEntity extends AbstractAspect
                     settype($value, $type == 'int' ? 'integer' : $type);
                 }
                 $proceedingJoinPoint->arguments['keys'][$arg->getName()] = $value;
+                continue;
+            }
+            if ($class instanceof RequestInterface) {
                 continue;
             }
             // 实体类
