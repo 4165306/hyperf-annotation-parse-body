@@ -95,6 +95,9 @@ class HandleRequestToEntity extends AbstractAspect
         } catch (\InvalidArgumentException $e) {
             throw new VariableTypeNotObtained('类不存在');
         }
+        if (count($classRef->getInterfaceNames()) > 0) {
+            throw new VariableTypeNotObtained('未知的数据类型');
+        }
         $methods = $classRef->getMethods(\ReflectionMethod::IS_PUBLIC);
         // 类实例
         $classInstance = $classRef->newInstance();
