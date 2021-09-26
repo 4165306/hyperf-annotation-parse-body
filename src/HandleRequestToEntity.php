@@ -122,7 +122,9 @@ class HandleRequestToEntity extends AbstractAspect
                         } catch (\InvalidArgumentException $e) {
                             // 该类为基础数据类型/接口/trait , 调用setter方法设置数据
                             // 属性转驼峰
-                            $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
+                            if (($dataSource[$classProperty->getName()] ?? null) != null ) {
+                                $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
+                            }
                         }
                     }
                 }
