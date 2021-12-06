@@ -13,6 +13,7 @@ namespace Caterpillar\HyperfAnnotationParseBody;
 
 use Caterpillar\HyperfAnnotationParseBody\Annotation\ParseBody;
 use Caterpillar\HyperfAnnotationParseBody\Exceptions\VariableTypeNotObtained;
+use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Di\Aop\AbstractAspect;
@@ -44,6 +45,9 @@ class HandleRequestToEntity extends AbstractAspect
      */
     public function process(?ProceedingJoinPoint $proceedingJoinPoint)
     {
+        $annotationAttribute = AnnotationCollector::list()[$proceedingJoinPoint->className];
+        $annotationAttribute = AnnotationCollector::getClassMethodAnnotation($proceedingJoinPoint->className, $proceedingJoinPoint->methodName);
+        var_dump('annotationData', $annotationAttribute, $proceedingJoinPoint->className);
         $controllerMethod = $proceedingJoinPoint->getReflectMethod();
         $mapData = $this->request->all();
         // 获取控制器方法参数列表
@@ -64,7 +68,7 @@ class HandleRequestToEntity extends AbstractAspect
                 // 反射失败 尝试注入基础类型参数
                 $value = $mapData[$arg->getName()];
                 $type = $this->getVariableTypeName($arg->getType());
-                if ($type && $value) {
+                if ($type) {
                     settype($value, $type == 'int' ? 'integer' : $type);
                 }
                 $proceedingJoinPoint->arguments['keys'][$arg->getName()] = $value;
