@@ -13,7 +13,6 @@ namespace Caterpillar\HyperfAnnotationParseBody;
 
 use Caterpillar\HyperfAnnotationParseBody\Annotation\ParseBody;
 use Caterpillar\HyperfAnnotationParseBody\Exceptions\VariableTypeNotObtained;
-use Hyperf\Di\Annotation\AnnotationCollector;
 use Hyperf\Di\Annotation\Aspect;
 use Hyperf\Di\Annotation\Inject;
 use Hyperf\Di\Aop\AbstractAspect;
@@ -45,9 +44,6 @@ class HandleRequestToEntity extends AbstractAspect
      */
     public function process(?ProceedingJoinPoint $proceedingJoinPoint)
     {
-        $annotationAttribute = AnnotationCollector::list()[$proceedingJoinPoint->className];
-        $annotationAttribute = AnnotationCollector::getClassMethodAnnotation($proceedingJoinPoint->className, $proceedingJoinPoint->methodName);
-        var_dump('annotationData', $annotationAttribute, $proceedingJoinPoint->className);
         $controllerMethod = $proceedingJoinPoint->getReflectMethod();
         $mapData = $this->request->all();
         // 获取控制器方法参数列表
@@ -64,7 +60,7 @@ class HandleRequestToEntity extends AbstractAspect
                     continue;
                 }
                 // 对方法参数进行实例化
-            } catch (VariableTypeNotObtained|\ReflectionException|\InvalidArgumentException $e) {
+            } catch (VariableTypeNotObtained|\InvalidArgumentException $e) {
                 // 反射失败 尝试注入基础类型参数
                 $value = $mapData[$arg->getName()];
                 $type = $this->getVariableTypeName($arg->getType());
@@ -129,7 +125,7 @@ class HandleRequestToEntity extends AbstractAspect
                         } catch (\InvalidArgumentException $e) {
                             // 该类为基础数据类型/接口/trait , 调用setter方法设置数据
                             // 属性转驼峰
-                            if (($dataSource[$classProperty->getName()] ?? null) != null ) {
+                            if (($dataSource[$classProperty->getName()] ?? null) != null) {
                                 $method->invoke($classInstance, $dataSource[$classProperty->getName()]);
                             }
                         }
