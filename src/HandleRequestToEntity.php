@@ -20,7 +20,6 @@ use Hyperf\Di\Aop\ProceedingJoinPoint;
 use Hyperf\Di\Exception\Exception;
 use Hyperf\Di\ReflectionManager;
 use Hyperf\HttpServer\Contract\RequestInterface;
-use JetBrains\PhpStorm\Pure;
 
 /**
  * @Aspect
@@ -142,7 +141,6 @@ class HandleRequestToEntity extends AbstractAspect
         return preg_replace('/(?<=[a-z])([A-Z])/', '_$1', $methodName);
     }
 
-    #[Pure]
     private function getVariableTypeName(?\ReflectionNamedType $reflectionNamedType): ?string
     {
         if ($reflectionNamedType === null) {
