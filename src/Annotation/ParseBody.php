@@ -20,7 +20,4 @@ use Hyperf\Di\Annotation\AbstractAnnotation;
 #[\Attribute(\Attribute::TARGET_ALL)]
 class ParseBody extends AbstractAnnotation
 {
-    public function __construct($attribute)
-    {
-    }
 }
