@@ -55,7 +55,6 @@ class ParseBodyCoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
                     $injections[] = $this->container->get($definition->getName());
                 } else {
                     $type = $definition->getName();
-                    var_dump($definition);
                     $defaultValue = $definition->getMeta('defaultValue');
                     settype($defaultValue, $type === 'int' ? 'integer' : $type);
                     $injections[] = $defaultValue;
