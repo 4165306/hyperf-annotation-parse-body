@@ -16,6 +16,11 @@ use Closure;
 
 class ParseBodyCoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
 {
+
+    public function __construct(ContainerInterface $container, string $serverName = 'http')
+    {
+        parent::__construct($container, $serverName);
+    }
     /**
      * Parse the parameters of method definitions, and then bind the specified arguments or
      * get the value from DI container, combine to a argument array that should be injected
