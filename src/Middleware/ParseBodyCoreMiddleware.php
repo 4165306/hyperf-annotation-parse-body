@@ -13,6 +13,7 @@ namespace Caterpillar\HyperfAnnotationParseBody\Middleware;
 
 use Hyperf\Di\ClosureDefinitionCollectorInterface;
 use Closure;
+use Psr\Container\ContainerInterface;
 
 class ParseBodyCoreMiddleware extends \Hyperf\HttpServer\CoreMiddleware
 {
