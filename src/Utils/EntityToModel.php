@@ -21,7 +21,7 @@ class EntityToModel
      * exp $model = (new EntityModel())->toModel($entity, $model, swoole_array(['excludeFields1', 'excludeFields2'])).
      * @param null|ArrayObject $exclude 排除实体类的字段
      */
-    public function toModel(object $entity, Model $model, ?ArrayObject $exclude = null): Model
+    public function toModel(object $entity, object $model, ?ArrayObject $exclude = null): Model
     {
         if ($exclude === null) {
             $exclude = swoole_array([]);
