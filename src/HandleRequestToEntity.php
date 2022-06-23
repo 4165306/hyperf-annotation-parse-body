@@ -61,6 +61,9 @@ class HandleRequestToEntity extends AbstractAspect
                 // 对方法参数进行实例化
             } catch (VariableTypeNotObtained|\InvalidArgumentException $e) {
                 // 反射失败 尝试注入基础类型参数
+                if (!isset($mapData[$arg->getName()])) {
+                    continue;
+                }
                 $value = $mapData[$arg->getName()];
                 $type = $this->getVariableTypeName($arg->getType());
                 if ($type) {
