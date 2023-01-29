@@ -28,7 +28,7 @@ use Hyperf\HttpServer\Contract\RequestInterface;
 class HandleRequestToEntity extends AbstractAspect
 {
     // 要切入的注解
-    public $annotations = [
+    public array $annotations = [
         ParseBody::class,
     ];
 
