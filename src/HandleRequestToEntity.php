@@ -21,9 +21,6 @@ use Hyperf\Di\Exception\Exception;
 use Hyperf\Di\ReflectionManager;
 use Hyperf\HttpServer\Contract\RequestInterface;
 
-/**
- * @Aspect
- */
 #[Aspect]
 class HandleRequestToEntity extends AbstractAspect
 {
@@ -32,9 +29,6 @@ class HandleRequestToEntity extends AbstractAspect
         ParseBody::class,
     ];
 
-    /**
-     * @Inject
-     */
     #[Inject]
     protected RequestInterface $request;
 
